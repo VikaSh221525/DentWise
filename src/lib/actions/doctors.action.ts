@@ -50,3 +50,45 @@ export async function createDoctor(input:CreateDoctorInput){
         throw new Error("Failed to create doctor")
     }
 }
+
+interface UpdateDoctorInput extends Partial<CreateDoctorInput>{  //Partial is used to make all properties optional
+    id: string;
+}
+
+export async function updateDoctor(input:UpdateDoctorInput){
+    try {
+        if(!input.name || !input.email) throw new Error("Name and email are required");
+        const currentDoctor = await prisma.doctor.findUnique({
+            where:{id: input.id}, select:{email: true}
+        })
+        if(!currentDoctor) throw new Error("Doctor not found");
+        // if email is changing check if teh new email already exists
+        if(currentDoctor.email !== input.email){
+            const existingDoctor = await prisma.doctor.findUnique({
+                where:{email: input.email}
+            })
+            if(existingDoctor) throw new Error("Email already exists");
+        }
+
+        // ...input is going to trigger the unique constaint violation for email.
+        const doctor = await prisma.doctor.update({
+            where:{id: input.id},
+            data:{
+                name: input.name,
+                email: input.email,
+                phone: input.phone,
+                speciality: input.speciality,
+                gender: input.gender,
+                isActive: input.isActive,
+
+            }
+        })
+
+        return doctor;
+
+    } catch (error) {
+        console.log(error)
+        throw new Error("Failed to update doctor")
+    }
+
+}

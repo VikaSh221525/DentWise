@@ -190,3 +190,19 @@ body {
     @apply cursor-pointer;
   }
 }
+
+@keyframes sound-wave{
+  0%{
+    transform: scaleY(0.3);
+  }
+  50%{
+    transform: scaleY(1);
+  }
+  100%{
+    transform: scaleY(0.3);
+  }
+}
+
+.animate-sound-wave{
+  animation: sound-wave 1.2s ease-in-out infinite;
+}

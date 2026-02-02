@@ -1,5 +1,6 @@
 "use client"
 
+import { AppointmentConfirmationModal } from '@/components/appointments/AppointmentConfirmationModal';
 import BookingConfirmationStep from '@/components/appointments/BookingConfirmationStep';
 import DoctorSelectionStep from '@/components/appointments/DoctorSelectionStep';
 import ProgressSteps from '@/components/appointments/ProgressSteps';
@@ -10,6 +11,19 @@ import { APPOINTMENT_TYPES } from '@/lib/utils';
 import { format } from 'date-fns';
 import React, { useState } from 'react'
 import { toast } from 'sonner';
+
+// Type for the booked appointment
+// type BookedAppointmentType = {
+//     id: string;
+//     doctorName: string;
+//     doctorImageUrl: string;
+//     patientName: string;
+//     patientEmail: string;
+//     date: string;
+//     time: string;
+//     reason: string;
+//     status: string;
+// };
 
 function page() {
 
@@ -22,7 +36,7 @@ function page() {
     const [currentStep, setCurrentStep] = useState(1);  // 1: select dentist, 2: select time 3:confirm
 
     const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-    const [bookedAppointment, setBookedAppointment] = useState<null>(null);
+    const [bookedAppointment, setBookedAppointment] = useState<any>(null);
 
     const bookAppointmentMutation = useBookAppointment();
     const { data: userAppointments = [] } = useUserAppointments();
@@ -52,6 +66,31 @@ function page() {
             {
                 onSuccess: async (appointment) => {
                     setBookedAppointment(appointment);
+
+                    //  send email
+
+                    try {
+                        const emailResponse = await fetch("/api/send-appointment-email", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                userEmail: appointment.patientEmail,
+                                doctorName: appointment.doctorName,
+                                appointmentDate: format(new Date(appointment.date), "EEEE, MMMM d, yyyy"),
+                                appointmentTime: appointment.time,
+                                appointmentType: appointmentType?.name,
+                                duration: appointmentType?.duration,
+                                price: appointmentType?.price,
+                            }),
+                        });
+                        if (!emailResponse.ok) console.error("Failed to send email");
+                    } catch (error) {
+                        console.error("Error sending confirmation mail", error);
+                    }
+
+
                     setShowConfirmationModal(true);
 
                     // reset states
@@ -116,6 +155,19 @@ function page() {
                 )}
 
             </div>
+
+            {bookedAppointment && (
+                <AppointmentConfirmationModal
+                    open={showConfirmationModal}
+                    onOpenChange={setShowConfirmationModal}
+                    appointmentDetails={{
+                        doctorName: bookedAppointment.doctorName,
+                        appointmentDate: format(new Date(bookedAppointment.date), "EEEE, MMMM d, yyyy"),
+                        appointmentTime: bookedAppointment.time,
+                        userEmail: bookedAppointment.patientEmail,
+                    }}
+                />
+            )}
 
             {/* SHOW Existing Appointments */}
 
